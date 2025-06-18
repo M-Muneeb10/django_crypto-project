@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if category %}{{ category.name }} {% else %}My Crypto Blog{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6 text-gray-200">
+    <h1 class="text-4xl font-bold text-blue-400 mb-8">
+        {% if category %}
+            Posts in {{ category.name }}
+        {% elif query %}
+            Search results for "{{ query }}"
+        {% else %}
+            My Crypto Blog
+        {% endif %}
+    </h1>
+
+    <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
+        {# Category Links #}
+        <div class="mb-4 md:mb-0">
+            Categories:
+            <a href="{% url 'blog:post_list' %}" {% if not category and not query %}class="font-bold"{% endif %}>All</a>
+            {% for c in Category.objects.all %}
+                | <a href="{{ c.get_absolute_url }}" {% if category == c %}class="font-bold"{% endif %}>{{ c.name }}</a>
+            {% endfor %}
+        </div>
+
+        {# --- ADD THIS SEARCH FORM --- #}
+        <form action="{% url 'blog:post_list' %}" method="get" class="flex items-center space-x-2">
+            <input type="text" name="q" placeholder="Search blog posts..."
+                   value="{{ query|default_if_none:'' }}"
+                   class="flex-grow px-3 py-2 bg-gray-700 text-gray-100 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline">
+                Search
+            </button>
+        </form>
+        {# --- END SEARCH FORM ADDITION --- #}
+    </div>
+
+    {% for post in posts %}
+    <div class="bg-gray-800 rounded-lg shadow-xl p-6 mb-8">
+        <h2 class="text-3xl font-bold text-blue-300 mb-2">
+            <a href="{{ post.get_absolute_url }}" class="hover:underline">
+                {{ post.title }}
+            </a>
+        </h2>
+        <p class="text-gray-400 text-sm mb-4">
+            Published {{ post.publish|date:"F j, Y" }} by {{ post.author }}
+            {% if post.category.all %}
+                in
+                {% for cat in post.category.all %}
+                    <a href="{{ cat.get_absolute_url }}" class="text-blue-500 hover:underline">{{ cat.name }}</a>{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+            {% endif %}
+        </p>
+
+        {% if post.chart_image %}
+        <img src="{{ post.chart_image.url }}" alt="{{ post.title }} chart" class="w-full h-auto rounded-lg mb-4">
+        {% endif %}
+
+        <p class="text-gray-300 mb-4">{{ post.body|truncatewords:50|safe }}</p> {# ADD |safe HERE #}
+        <a href="{{ post.get_absolute_url }}" class="text-blue-500 hover:underline font-semibold">Read more</a>
+    </div>
+    {% empty %}
+    <p class="text-gray-400">No blog posts found{% if category %} in this category{% endif %}{% if query %} matching "{{ query }}"{% endif %}.</p>
+    {% endfor %}
+
+    {% if posts.has_other_pages %}
+    <div class="flex justify-center mt-8">
+        {% if posts.has_previous %}
+            <a href="?page={{ posts.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" class="bg-gray-700 hover:bg-gray-600 text-gray-100 font-semibold py-2 px-4 rounded-l-lg">Previous</a>
+        {% endif %}
+        <span class="bg-gray-700 text-gray-100 font-semibold py-2 px-4">
+            Page {{ posts.number }} of {{ posts.paginator.num_pages }}
+        </span>
+        {% if posts.has_next %}
+            <a href="?page={{ posts.next_page_number }}{% if query %}&q={{ query }}{% endif %}" class="bg-gray-700 hover:bg-gray-600 text-gray-100 font-semibold py-2 px-4 rounded-r-lg">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

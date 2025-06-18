@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CryptoTracker{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #1a202c; /* bg-gray-900 equivalent */
+            color: #e2e8f0; /* text-gray-200 equivalent */
+        }
+        /* Add any custom CSS here if needed */
+        .prose-invert {
+            --tw-prose-body: #d1d5db; /* gray-300 */
+            --tw-prose-headings: #93c5fd; /* blue-300 */
+            --tw-prose-links: #60a5fa; /* blue-400 */
+            --tw-prose-bold: #f3f4f6; /* gray-50 */
+            --tw-prose-code: #f3f4f6; /* gray-50 */
+            --tw-prose-hr: #4b5563; /* gray-600 */
+            /* Add more custom prose styling as needed */
+        }
+        /* Custom style for form fields to make them fill width and dark themed */
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        textarea {
+            width: 100%;
+            padding: 0.75rem 1rem; /* py-3 px-4 */
+            border-radius: 0.5rem; /* rounded-lg */
+            border: 1px solid #4a5568; /* border-gray-600 */
+            background-color: #2d3748; /* bg-gray-700 */
+            color: #e2e8f0; /* text-gray-200 */
+            font-size: 1rem; /* text-base */
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #63b3ed; /* blue-400 */
+            box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.5); /* blue-400 with opacity */
+            background-color: #2d3748; /* bg-gray-700 */
+        }
+        input[type="checkbox"] {
+            /* Basic styling for checkbox, you might use a custom component for better design */
+            appearance: none;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid #4a5568; /* border-gray-600 */
+            background-color: #2d3748; /* bg-gray-700 */
+            border-radius: 0.25rem;
+            display: inline-block;
+            position: relative;
+            vertical-align: middle;
+            cursor: pointer;
+        }
+        input[type="checkbox"]:checked {
+            background-color: #4299e1; /* blue-500 */
+            border-color: #4299e1; /* blue-500 */
+        }
+        input[type="checkbox"]:checked::after {
+            content: '✔';
+            color: white;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased bg-gray-900 text-gray-200">
+    <header class="bg-gray-800 shadow-md py-4">
+        <div class="container mx-auto flex justify-between items-center px-6">
+            <a href="{% url 'blog:post_list' %}" class="text-3xl font-extrabold text-blue-500 hover:text-blue-400">CryptoTracker Blog</a>
+            <nav class="flex items-center space-x-4"> {# Added flex and space-x-4 for proper spacing #}
+                <a href="{% url 'blog:post_list' %}" class="text-gray-200 hover:text-blue-400 font-semibold text-lg">Blog</a>
+                <a href="{% url 'crypto_live:crypto_price_list' %}" class="text-gray-200 hover:text-blue-400 font-semibold text-lg">Live Prices</a>
+
+                {# AUTHENTICATION LINKS - DYNAMICALLY DISPLAYED #}
+                {% if user.is_authenticated %}
+                    {# Links for logged-in users #}
+                    <div class="flex items-center space-x-2"> {# Wrap logged-in elements in a div for spacing #}
+                        <span class="text-gray-200 font-semibold text-lg">Hello, {{ user.username }}!</span>
+                        <form action="{% url 'logout' %}" method="post" class="inline-block">
+                            {% csrf_token %}
+                            <button type="submit" class="text-gray-200 hover:text-blue-400 font-semibold text-lg bg-transparent border-none cursor-pointer p-0 m-0">
+                                Log Out
+                            </button>
+                        </form>
+                    </div>
+                    {# Later: Add link to Premium Signals box here, e.g.: #}
+                    {# <a href="{% url 'premium_signals:dashboard' %}" class="text-yellow-400 hover:text-yellow-300 font-bold text-lg ml-4">Premium Signals</a> #}
+                {% else %}
+                    {# Links for logged-out users #}
+                    <a href="{% url 'login' %}" class="text-gray-200 hover:text-blue-400 font-semibold text-lg">Log In</a>
+                    <a href="{% url 'users:register' %}" class="text-blue-400 hover:text-blue-300 font-bold text-lg">Sign Up</a>
+                {% endif %}
+                {# Admin link can stay if you want it visible to all, or move it inside is_staff check #}
+                <a href="{% url 'admin:index' %}" class="text-gray-200 hover:text-blue-400 font-semibold text-lg">Admin</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        {# MESSAGES SECTION - Displays success/error/warning messages #}
+        {% if messages %}
+            <div class="container mx-auto px-6 mt-4">
+                {% for message in messages %}
+                    <div class="p-3 mb-3 rounded-md
+                        {% if message.tags == 'success' %}bg-green-500 text-white
+                        {% elif message.tags == 'warning' %}bg-yellow-500 text-gray-900
+                        {% elif message.tags == 'error' %}bg-red-500 text-white
+                        {% else %}bg-blue-500 text-white
+                        {% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% block content %}
+        {# Content from child templates like blog posts or crypto prices will go here #}
+        {% endblock %}
+    </main>
+
+    <footer class="bg-gray-800 text-gray-400 text-center py-4 mt-8">
+        <div class="container mx-auto px-6">
+            {# NEWSLETTER SUBSCRIPTION FORM #}
+            <div class="mt-6 mb-4 max-w-md mx-auto">
+                <h3 class="text-xl font-bold text-blue-300 mb-3">Get Quick Updates!</h3>
+                <p class="text-gray-400 mb-3">Subscribe to get the latest news directly in your inbox.</p>
+                <form action="{% url 'quick_updates:subscribe_newsletter' %}" method="post" class="flex flex-col space-y-3">
+                    {% csrf_token %}
+                    {{ subscriber_form.email }} {# Renders the email input field from the context processor #}
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline">
+                        Subscribe Now
+                    </button>
+                </form>
+            </div>
+
+            <p>&copy; {% now "Y" %} CryptoTracker. All rights reserved.</p>
+            {# You can add more footer links or information here #}
+        </div>
+    </footer>
+</body>
+</html>
+

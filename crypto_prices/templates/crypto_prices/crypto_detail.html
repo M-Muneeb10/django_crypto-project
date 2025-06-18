@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{{ crypto.name }} Details - CryptoTracker{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6">
+    <div class="bg-gray-800 rounded-lg shadow-xl p-8"> {# Changed bg-white to bg-gray-800 #}
+        <div class="flex items-center justify-center mb-6">
+            {% if crypto.logo_url %}
+            <img src="{{ crypto.logo_url }}" alt="{{ crypto.name }} logo" class="w-20 h-20 rounded-full mr-6">
+            {% else %}
+            <div class="w-20 h-20 rounded-full bg-gray-700 flex items-center justify-center mr-6 text-4xl text-gray-400 font-bold"> {# Adjusted for dark mode #}
+                {{ crypto.symbol|slice:":1" }}
+            </div>
+            {% endif %}
+            <h1 class="text-3xl font-bold text-blue-400">{{ crypto.name }} ({{ crypto.symbol }})</h1> {# Adjusted text color #}
+        </div>
+
+        <div class="mb-6 text-gray-200"> {# Added text-gray-200 for this section #}
+            <p class="text-xl font-semibold">Current Price: <span class="text-green-400">${{ crypto.current_price|floatformat:2 }}</span></p> {# Adjusted green shade #}
+            <p class="text-lg">Market Cap: <span class="text-blue-400">${{ crypto.market_cap|floatformat:0|intcomma }}</span></p> {# Adjusted blue shade #}
+            <p class="text-lg">24h Change:
+                {% if crypto.price_change_percentage_24h %}
+                {% if crypto.price_change_percentage_24h > 0 %}
+                <span class="text-green-400 font-bold">{{ crypto.price_change_percentage_24h|floatformat:2 }}% &#9650;</span> {# Adjusted green shade #}
+                {% elif crypto.price_change_percentage_24h < 0 %}
+                <span class="text-red-400 font-bold">{{ crypto.price_change_percentage_24h|floatformat:2 }}% &#9660;</span> {# Adjusted red shade #}
+                {% else %}
+                <span class="text-gray-400 font-bold">{{ crypto.price_change_percentage_24h|floatformat:2 }}%</span> {# Adjusted gray shade #}
+                {% endif %}
+                {% else %}
+                <span class="text-gray-400">N/A</span> {# Adjusted gray shade #}
+                {% endif %}
+            </p>
+        </div>
+
+        {% if crypto.description %}
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-200 mb-2">Description</h2> {# Changed text-gray-800 to text-gray-200 #}
+            <p class="text-gray-300">{{ crypto.description }}</p> {# Changed text-gray-700 to text-gray-300 #}
+        </div>
+        {% endif %}
+
+        <div>
+            <h2 class="text-xl font-semibold text-gray-200 mb-4">Price History (Last 30 Days)</h2> {# Changed text-gray-800 to text-gray-200 #}
+            <div id="candlestick-chart" class="w-full h-96">
+                {# Plotly chart will be rendered here #}
+            </div>
+        </div>
+
+        <div class="mt-8">
+            <a href="{% url 'crypto_list' %}" class="bg-gray-700 hover:bg-gray-600 text-gray-100 font-semibold py-2 px-4 rounded-lg"> {# Changed bg and text #}
+                Back to Cryptocurrency List
+            </a>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const historicalData = {{ historical_data|safe }};
+        const chartDiv = document.getElementById('candlestick-chart');
+
+        if (historicalData && historicalData.length > 0) {
+            const timestamps = historicalData.map(item => new Date(item.slice(0, 1)[0]).toISOString().split('T')[0]);
+            const opens = historicalData.map(item => item.slice(1, 2)[0]);
+            const highs = historicalData.map(item => item.slice(2, 3)[0]);
+            const lows = historicalData.map(item => item.slice(3, 4)[0]);
+            const closes = historicalData.map(item => item.slice(4, 5)[0]);
+
+            const trace = {
+                type: 'candlestick',
+                x: timestamps,
+                open: opens,
+                high: highs,
+                low: lows,
+                close: closes,
+                increasing: { line: { color: 'green' } },
+                decreasing: { line: { color: 'red' } }
+            };
+
+            const layout = {
+                paper_bgcolor: 'rgba(0,0,0,0)', // Make chart background transparent
+                plot_bgcolor: 'rgba(0,0,0,0)', // Make plot area transparent
+                font: {
+                    color: '#e2e8f0' // Light gray for text in chart (text-gray-200)
+                },
+                xaxis: {
+                    title: 'Date',
+                    gridcolor: '#4a5568', // Darker grid lines
+                    tickfont: { color: '#e2e8f0' } // Light gray ticks
+                },
+                yaxis: {
+                    title: 'Price (USD)',
+                    gridcolor: '#4a5568', // Darker grid lines
+                    tickfont: { color: '#e2e8f0' } // Light gray ticks
+                },
+                margin: {
+                    l: 40,
+                    r: 40,
+                    b: 40,
+                    t: 40
+                }
+            };
+
+            Plotly.newPlot(chartDiv, [trace], layout);
+        } else {
+            chartDiv.innerHTML = '<p class="text-gray-400">No historical price data available for the last 30 days.</p>'; {# Adjusted text color #}
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}
